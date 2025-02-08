@@ -1,0 +1,210 @@
+/**
+ * STUDENT MANAGEMENT SYSTEM (ENHANCED)
+ * 
+ * Features:
+ * - CRUD Operations (Create, Read, Update, Delete)
+ * - Input validation
+ * - Error handling
+ * - Clean console interface
+ * - Detailed comments
+ */
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+// Model class representing a Student entity
+class Student {
+    private int id;
+    private String name;
+    private String grade;
+
+    public Student(int id, String name, String grade) {
+        this.id = id;
+        this.name = name;
+        this.grade = grade;
+    }
+
+    // Getters and setters with validation
+    public int getId() { return id; }
+    
+    public String getName() { return name; }
+    public void setName(String name) { 
+        if (!name.isEmpty()) this.name = name; 
+    }
+
+    public String getGrade() { return grade; }
+    public void setGrade(String grade) { 
+        if (isValidGrade(grade)) this.grade = grade.toUpperCase(); 
+    }
+
+    // Validate grade format (A-F with optional + or -)
+    private boolean isValidGrade(String grade) {
+        return grade.matches("[A-Fa-f][+-]?");
+    }
+
+    @Override
+    public String toString() {
+        return String.format("| %-4d | %-20s | %-6s |", id, name, grade.toUpperCase());
+    }
+}
+
+// Service class handling business logic
+class StudentService {
+    private List<Student> students = new ArrayList<>();
+    private int nextId = 1;
+    private Scanner scanner = new Scanner(System.in);
+
+    // Add new student with input validation
+    public void addStudent() {
+        System.out.println("\n--- ADD NEW STUDENT ---");
+        
+        String name = getValidInput("Enter student name: ", 
+            "Name cannot be empty!", 
+            input -> !input.trim().isEmpty());
+
+        String grade = getValidInput("Enter student grade (A-F with +/-): ", 
+            "Invalid grade format! Use A-F with optional + or -", 
+            input -> input.matches("[A-Fa-f][+-]?"));
+
+        students.add(new Student(nextId++, name, grade));
+        System.out.println("\n✅ Student added successfully!");
+    }
+
+    // Display all students in tabular format
+    public void viewStudents() {
+        System.out.println("\n--- STUDENT LIST ---");
+        
+        if (students.isEmpty()) {
+            System.out.println("No students found.");
+            return;
+        }
+
+        printTableHeader();
+        students.forEach(System.out::println);
+        printTableFooter();
+    }
+
+    // Update existing student record
+    public void updateStudent() {
+        System.out.println("\n--- UPDATE STUDENT ---");
+        Student student = findStudentById();
+        
+        if (student == null) return;
+
+        String newName = getValidInput("Enter new name (press Enter to keep current): ", 
+            "",  // No error message for empty input
+            input -> true); // Accept any input
+
+        if (!newName.isEmpty()) {
+            student.setName(newName);
+        }
+
+        String newGrade = getValidInput("Enter new grade (press Enter to keep current): ", 
+            "Invalid grade format! Use A-F with optional + or -", 
+            input -> input.isEmpty() || input.matches("[A-Fa-f][+-]?"));
+
+        if (!newGrade.isEmpty()) {
+            student.setGrade(newGrade);
+        }
+
+        System.out.println("\n✅ Student updated successfully!");
+    }
+
+    // Delete student by ID
+    public void deleteStudent() {
+        System.out.println("\n--- DELETE STUDENT ---");
+        Student student = findStudentById();
+        
+        if (student == null) return;
+
+        students.remove(student);
+        System.out.println("\n✅ Student deleted successfully!");
+    }
+
+    // Helper method to find student by ID
+    private Student findStudentById() {
+        try {
+            System.out.print("Enter student ID: ");
+            int id = Integer.parseInt(scanner.nextLine());
+            
+            return students.stream()
+                .filter(s -> s.getId() == id)
+                .findFirst()
+                .orElseThrow(() -> new Exception());
+                
+        } catch (Exception e) {
+            System.out.println("\n❌ Student not found or invalid ID!");
+            return null;
+        }
+    }
+
+    // Generic input validation method
+    private String getValidInput(String prompt, String errorMessage, Validator validator) {
+        String input;
+        do {
+            System.out.print(prompt);
+            input = scanner.nextLine().trim();
+            if (!validator.validate(input)) {
+                System.out.println("\n❌ " + errorMessage);
+            }
+        } while (!validator.validate(input));
+        return input;
+    }
+
+    // Table formatting methods
+    private void printTableHeader() {
+        System.out.println("+------+----------------------+--------+");
+        System.out.println("| ID   | Name                 | Grade  |");
+        System.out.println("+------+----------------------+--------+");
+    }
+
+    private void printTableFooter() {
+        System.out.println("+------+----------------------+--------+");
+        System.out.println("Total students: " + students.size());
+    }
+
+    // Functional interface for input validation
+    @FunctionalInterface
+    interface Validator {
+        boolean validate(String input);
+    }
+}
+
+// Main application class
+public class StudentManagementSystem {
+    public static void main(String[] args) {
+        StudentService service = new StudentService();
+        Scanner scanner = new Scanner(System.in);
+        
+        System.out.println("\n🎓 Welcome to Student Management System 🎓");
+
+        while (true) {
+            printMainMenu();
+            String choice = scanner.nextLine();
+
+            switch (choice) {
+                case "1" -> service.addStudent();
+                case "2" -> service.viewStudents();
+                case "3" -> service.updateStudent();
+                case "4" -> service.deleteStudent();
+                case "5" -> {
+                    System.out.println("\n👋 Exiting system... Goodbye!");
+                    scanner.close();
+                    System.exit(0);
+                }
+                default -> System.out.println("\n❌ Invalid choice! Please try again.");
+            }
+        }
+    }
+
+    private static void printMainMenu() {
+        System.out.println("\n==================== MAIN MENU ====================");
+        System.out.println("1. Add Student");
+        System.out.println("2. View Students");
+        System.out.println("3. Update Student");
+        System.out.println("4. Delete Student");
+        System.out.println("5. Exit");
+        System.out.print("Enter your choice (1-5): ");
+    }
+}
